@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { MessageSquareWarning, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,8 +37,8 @@ export default function ChatError({
             <RefreshCw className="h-4 w-4 mr-2" />
             Try again
           </Button>
-          <Button variant="outline" onClick={() => (window.location.href = "/")}>
-            Go home
+          <Button asChild variant="outline">
+            <Link href="/">Go home</Link>
           </Button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bot } from "lucide-react";
 import { UserProfile } from "@/components/auth/user-profile";
+import { HeaderNav } from "@/components/header-nav";
 import { ModeToggle } from "./ui/mode-toggle";
 
 export function SiteHeader() {
@@ -22,7 +23,7 @@ export function SiteHeader() {
             <Link
               href="/"
               className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-              aria-label="Starter Kit - Go to homepage"
+              aria-label="RAG Workspace - Go to homepage"
             >
               <div
                 className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10"
@@ -31,11 +32,12 @@ export function SiteHeader() {
                 <Bot className="h-5 w-5" />
               </div>
               <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Starter Kit
+                RAG Workspace
               </span>
             </Link>
           </h1>
           <div className="flex items-center gap-2 sm:gap-4" role="group" aria-label="User actions">
+            <HeaderNav />
             <UserProfile />
             <ModeToggle />
           </div>

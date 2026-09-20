@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -34,8 +35,8 @@ export default function Error({
         )}
         <div className="flex gap-4 justify-center">
           <Button onClick={reset}>Try again</Button>
-          <Button variant="outline" onClick={() => (window.location.href = "/")}>
-            Go home
+          <Button asChild variant="outline">
+            <Link href="/">Go home</Link>
           </Button>
         </div>
       </div>

@@ -1,6 +1,8 @@
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, integer } from "drizzle-orm/pg-core";
 
 // IMPORTANT! ID fields should ALWAYS use UUID types, EXCEPT the BetterAuth tables.
+// (documents/chunks follow the existing tables' convention: text PKs holding UUIDs
+// generated in app code via crypto.randomUUID().)
 
 
 export const user = pgTable(
@@ -80,3 +82,46 @@ export const verification = pgTable("verification", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export const documents = pgTable(
+  "documents",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    // "text" | "url"
+    type: text("type").notNull(),
+    url: text("url"),
+    // "ready" | "processing" | "failed"
+    status: text("status").notNull(),
+    content: text("content").notNull(),
+    error: text("error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("documents_user_id_idx").on(table.userId)]
+);
+
+export const chunks = pgTable(
+  "chunks",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    position: integer("position").default(0).notNull(),
+  },
+  (table) => [
+    index("chunks_user_id_idx").on(table.userId),
+    index("chunks_document_id_idx").on(table.documentId),
+  ]
+);

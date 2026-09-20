@@ -7,6 +7,9 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { UserProfile } from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { useSession } from "@/lib/auth-client";
 import type { Components } from "react-markdown";
 
@@ -106,11 +109,24 @@ const markdownComponents: Components = {
 };
 
 type TextPart = { type?: string; text?: string };
+type SourceCitation = { index: number; title: string; url?: string };
+type DataSourcesPart = { type: "data-sources"; data: SourceCitation[] };
 type MaybePartsMessage = {
   display?: ReactNode;
-  parts?: TextPart[];
+  parts?: (TextPart | DataSourcesPart)[];
   content?: TextPart[];
 };
+
+function getSourceCitations(message: MaybePartsMessage): SourceCitation[] {
+  const parts = Array.isArray(message.parts) ? message.parts : [];
+  const citations: SourceCitation[] = [];
+  for (const part of parts) {
+    if (part?.type === "data-sources" && "data" in part && Array.isArray(part.data)) {
+      citations.push(...part.data);
+    }
+  }
+  return citations;
+}
 
 function getMessageText(message: MaybePartsMessage): string {
   const parts = Array.isArray(message.parts)
@@ -119,7 +135,7 @@ function getMessageText(message: MaybePartsMessage): string {
     ? message.content
     : [];
   return parts
-    .filter((p) => p?.type === "text" && p.text)
+    .filter((p): p is TextPart => p?.type === "text" && "text" in p)
     .map((p) => p.text)
     .join("\n");
 }
@@ -131,13 +147,14 @@ function renderMessageContent(message: MaybePartsMessage): ReactNode {
     : Array.isArray(message.content)
     ? message.content
     : [];
-  return parts.map((p, idx) =>
-    p?.type === "text" && p.text ? (
+  return parts.map((p, idx) => {
+    if (p?.type !== "text" || !("text" in p)) return null;
+    return (
       <ReactMarkdown key={idx} components={markdownComponents}>
         {p.text}
       </ReactMarkdown>
-    ) : null
-  );
+    );
+  });
 }
 
 function formatTimestamp(date: Date): string {
@@ -167,9 +184,10 @@ function CopyButton({ text }: { text: string }) {
       onClick={handleCopy}
       className="p-1 hover:bg-muted rounded transition-colors"
       title="Copy to clipboard"
+      aria-label="Copy message"
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-green-500" />
+        <Check className="h-3.5 w-3.5 text-primary" />
       ) : (
         <Copy className="h-3.5 w-3.5 text-muted-foreground" />
       )}
@@ -228,7 +246,12 @@ export default function ChatPage() {
   };
 
   if (isPending) {
-    return <div className="container mx-auto px-4 py-12">Loading...</div>;
+    return (
+      <div className="container mx-auto px-4 py-12 flex items-center gap-2">
+        <Spinner size="sm" aria-hidden="true" />
+        <span className="text-sm text-muted-foreground">Loading…</span>
+      </div>
+    );
   }
 
   if (!session) {
@@ -261,7 +284,10 @@ export default function ChatPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <div
+            role="alert"
+            className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg"
+          >
             <p className="text-sm text-destructive">
               Error: {error.message || "Something went wrong"}
             </p>
@@ -276,6 +302,7 @@ export default function ChatPage() {
           )}
           {messages.map((message) => {
             const messageText = getMessageText(message as MaybePartsMessage);
+            const citations = getSourceCitations(message as MaybePartsMessage);
             const createdAt = (message as { createdAt?: Date }).createdAt;
             const timestamp = createdAt
               ? formatTimestamp(new Date(createdAt))
@@ -300,12 +327,36 @@ export default function ChatPage() {
                     )}
                   </div>
                   {message.role === "assistant" && messageText && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                       <CopyButton text={messageText} />
                     </div>
                   )}
                 </div>
                 <div>{renderMessageContent(message as MaybePartsMessage)}</div>
+                {message.role === "assistant" && citations.length > 0 && (
+                  <div className="mt-2 rounded-md border p-2">
+                    <p className="text-xs text-muted-foreground mb-1">Sources</p>
+                    <ul className="space-y-1">
+                      {citations.map((citation, idx) => (
+                        <li key={idx} className="text-sm leading-6">
+                          {citation.index + 1}.{" "}
+                          {citation.url ? (
+                            <a
+                              href={citation.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline underline-offset-2 hover:opacity-90"
+                            >
+                              {citation.title}
+                            </a>
+                          ) : (
+                            citation.title
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -324,11 +375,17 @@ export default function ChatPage() {
           }}
           className="flex gap-2"
         >
-          <input
+          <Label htmlFor="chat-message" className="sr-only">
+            Message
+          </Label>
+          <Input
+            id="chat-message"
+            name="message"
+            autoComplete="off"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 p-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Type your message…"
+            className="flex-1"
             disabled={isStreaming}
           />
           <Button type="submit" disabled={!input.trim() || isStreaming}>

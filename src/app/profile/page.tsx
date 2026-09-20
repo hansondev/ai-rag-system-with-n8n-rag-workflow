@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { useSession } from "@/lib/auth-client";
 
 export default function ProfilePage() {
@@ -42,7 +43,7 @@ export default function ProfilePage() {
   if (isPending || !session) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div>Loading...</div>
+        <Spinner aria-label="Loading" />
       </div>
     );
   }
@@ -99,10 +100,7 @@ export default function ProfilePage() {
                   <Mail className="h-4 w-4" />
                   <span>{user.email}</span>
                   {user.emailVerified && (
-                    <Badge
-                      variant="outline"
-                      className="text-green-600 border-green-600"
-                    >
+                    <Badge variant="outline" className="text-foreground">
                       <Shield className="h-3 w-3 mr-1" />
                       Verified
                     </Badge>
@@ -128,24 +126,21 @@ export default function ProfilePage() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
+                <span className="text-sm font-medium text-muted-foreground">
                   Full Name
-                </label>
+                </span>
                 <div className="p-3 border rounded-md bg-muted/10">
                   {user.name || "Not provided"}
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
+                <span className="text-sm font-medium text-muted-foreground">
                   Email Address
-                </label>
+                </span>
                 <div className="p-3 border rounded-md bg-muted/10 flex items-center justify-between">
                   <span>{user.email}</span>
                   {user.emailVerified && (
-                    <Badge
-                      variant="outline"
-                      className="text-green-600 border-green-600"
-                    >
+                    <Badge variant="outline" className="text-foreground">
                       Verified
                     </Badge>
                   )}
@@ -195,16 +190,13 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <div>
                     <p className="font-medium">Current Session</p>
                     <p className="text-sm text-muted-foreground">Active now</p>
                   </div>
                 </div>
-                <Badge
-                  variant="outline"
-                  className="text-green-600 border-green-600"
-                >
+                <Badge variant="outline" className="text-foreground">
                   Active
                 </Badge>
               </div>

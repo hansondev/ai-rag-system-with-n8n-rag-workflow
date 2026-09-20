@@ -1,451 +1,173 @@
 # Design System
 
-This document defines the visual design system for the project. All new components and pages **must** follow these tokens, patterns, and conventions.
+## 1. Purpose
 
----
+This is the implemented visual system for the Agentic Coding Boilerplate. It follows an **adapted Vercel-inspired** direction: near-neutral surfaces, fine border-led hierarchy, compact actions, restrained elevation, and purposeful motion without copying Vercel code, assets, or content. Use the semantic tokens, Tailwind utilities, and shared components in `src/components/ui/` to preserve consistency across light and dark themes.
 
-## Stack
+## 2. Design Principles
 
-- **Framework:** Next.js (App Router) + React + TypeScript
-- **Styling:** Tailwind CSS v4 (CSS-first config via `@theme inline` in `globals.css` — no `tailwind.config.ts`)
-- **Components:** shadcn/ui (new-york style, neutral base)
-- **Icons:** Lucide React
-- **Fonts:** Geist (sans) + Geist Mono (mono) via `next/font/google`
-- **Dark mode:** next-themes (class-based, system default)
-- **Utilities:** `cn()` from `@/lib/utils` (clsx + tailwind-merge)
+- **Semantic first:** use `bg-background`, `text-foreground`, `border-border`, and related tokens instead of hard-coded colors.
+- **Near-neutral, border-led hierarchy:** distinguish surfaces with semantic neutrals and thin borders before adding shadows or decorative fills.
+- **Compact, clear actions:** favor the existing 32–40px button scale and direct labels.
+- **Reuse before custom UI:** use the shadcn/Radix-based primitives and `cn()` from `@/lib/utils`.
+- **Editorial responsiveness:** begin with one-column reading order; stack rows and grids cleanly before introducing `md:` or `lg:` columns.
+- **Functional motion:** animate feedback, entry, and state changes only when it clarifies an interaction.
+- **Accessible interaction:** retain semantic HTML, visible focus, labels, and disabled states.
 
----
+## 3. Foundations
 
-## Colors
+### Colors
 
-All values use the **oklch** color space. Colors are defined as CSS custom properties in `globals.css` and bridged to Tailwind via `@theme inline`.
+All color tokens are semantic `oklch` CSS custom properties in `src/app/globals.css`, exposed to Tailwind by `@theme inline`. The low-chroma neutral palette keeps surfaces restrained; indigo-hued primary, accent, and ring tokens provide the interactive emphasis.
 
-### Semantic Tokens
-
-| Token | Light | Dark | Usage |
-|---|---|---|---|
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
 | `background` | `oklch(1 0 0)` | `oklch(0.141 0.005 285.823)` | Page background |
 | `foreground` | `oklch(0.141 0.005 285.823)` | `oklch(0.985 0 0)` | Primary text |
-| `primary` | `oklch(0.21 0.034 270)` | `oklch(0.92 0.02 270)` | Buttons, links, accents |
-| `primary-foreground` | `oklch(0.985 0 0)` | `oklch(0.21 0.006 285.885)` | Text on primary |
-| `secondary` | `oklch(0.967 0.001 286.375)` | `oklch(0.274 0.006 286.033)` | Secondary buttons, subtle bg |
-| `secondary-foreground` | `oklch(0.21 0.006 285.885)` | `oklch(0.985 0 0)` | Text on secondary |
-| `muted` | `oklch(0.967 0.001 286.375)` | `oklch(0.274 0.006 286.033)` | Subdued backgrounds |
-| `muted-foreground` | `oklch(0.552 0.016 285.938)` | `oklch(0.705 0.015 286.067)` | Subdued text, placeholders |
-| `accent` | `oklch(0.96 0.012 270)` | `oklch(0.28 0.018 270)` | Hover backgrounds, highlights |
-| `accent-foreground` | `oklch(0.21 0.006 285.885)` | `oklch(0.985 0 0)` | Text on accent |
-| `destructive` | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` | Error states, delete actions |
-| `card` | `oklch(1 0 0)` | `oklch(0.21 0.006 285.885)` | Card backgrounds |
-| `card-foreground` | `oklch(0.141 0.005 285.823)` | `oklch(0.985 0 0)` | Card text |
-| `popover` | `oklch(1 0 0)` | `oklch(0.21 0.006 285.885)` | Popover/dropdown bg |
-| `popover-foreground` | `oklch(0.141 0.005 285.823)` | `oklch(0.985 0 0)` | Popover/dropdown text |
-| `border` | `oklch(0.92 0.004 286.32)` | `oklch(1 0 0 / 10%)` | Borders, dividers |
-| `input` | `oklch(0.92 0.004 286.32)` | `oklch(1 0 0 / 15%)` | Input borders |
-| `ring` | `oklch(0.705 0.06 270)` | `oklch(0.552 0.05 270)` | Focus rings |
-
-### Chart Colors
-
-| Token | Light | Dark |
-|---|---|---|
-| `chart-1` | `oklch(0.646 0.222 41.116)` | `oklch(0.488 0.243 264.376)` |
-| `chart-2` | `oklch(0.6 0.118 184.704)` | `oklch(0.696 0.17 162.48)` |
-| `chart-3` | `oklch(0.398 0.07 227.392)` | `oklch(0.769 0.188 70.08)` |
-| `chart-4` | `oklch(0.828 0.189 84.429)` | `oklch(0.627 0.265 303.9)` |
-| `chart-5` | `oklch(0.769 0.188 70.08)` | `oklch(0.645 0.246 16.439)` |
-
-### Sidebar Colors
-
-| Token | Light | Dark |
-|---|---|---|
-| `sidebar` | `oklch(0.985 0 0)` | `oklch(0.21 0.006 285.885)` |
-| `sidebar-foreground` | `oklch(0.141 0.005 285.823)` | `oklch(0.985 0 0)` |
-| `sidebar-primary` | `oklch(0.21 0.006 285.885)` | `oklch(0.488 0.243 264.376)` |
-| `sidebar-primary-foreground` | `oklch(0.985 0 0)` | `oklch(0.985 0 0)` |
-| `sidebar-accent` | `oklch(0.967 0.001 286.375)` | `oklch(0.274 0.006 286.033)` |
-| `sidebar-accent-foreground` | `oklch(0.21 0.006 285.885)` | `oklch(0.985 0 0)` |
-| `sidebar-border` | `oklch(0.92 0.004 286.32)` | `oklch(1 0 0 / 10%)` |
-| `sidebar-ring` | `oklch(0.705 0.015 286.067)` | `oklch(0.552 0.016 285.938)` |
-
-### Ad-hoc Status Colors
-
-Use these Tailwind utilities for status indicators — they are not part of the token system but are used consistently:
-
-- **Success:** `text-green-600` / `dark:text-green-400`, `bg-green-500`
-- **Error:** `text-red-600`, `text-destructive`
-
----
-
-## Typography
-
-### Font Families
-
-| Token | Font | Usage |
-|---|---|---|
-| `--font-geist-sans` | Geist | All UI text (applied to body) |
-| `--font-geist-mono` | Geist Mono | Code, monospace content |
-
-Body has `font-feature-settings: "rlig" 1, "calt" 1` and `antialiased` enabled.
-
-### Type Scale
-
-| Class | Size | Usage |
-|---|---|---|
-| `text-xs` | 12px | Timestamps, shortcuts, helper text, code |
-| `text-sm` | 14px | Descriptions, labels, body copy, card descriptions |
-| `text-base` | 16px | Base text, inputs (mobile) |
-| `text-lg` | 18px | Dialog titles, sub-headings |
-| `text-xl` | 20px | Section titles, header logo |
-| `text-2xl` | 24px | Page titles, card titles |
-| `text-3xl` | 30px | Dashboard/profile headings |
-| `text-4xl` | 36px | Large display text |
-| `text-5xl` | 48px | Hero title |
-
-### Font Weights
-
-| Class | Weight | Usage |
-|---|---|---|
-| `font-medium` | 500 | Buttons, labels, nav items |
-| `font-semibold` | 600 | Card titles, section headings, badges, dialog titles |
-| `font-bold` | 700 | Page titles, hero heading |
-
-### Line Heights & Tracking
-
-| Class | Usage |
-|---|---|
-| `leading-none` | Labels, card titles |
-| `leading-5` | Code blocks |
-| `leading-6` | List items |
-| `leading-7` | Paragraphs (markdown) |
-| `tracking-tight` | Hero/display text |
-| `tracking-widest` | Keyboard shortcuts |
-
----
-
-## Spacing
-
-### Container Pattern
-
-```
-container mx-auto px-4
-```
-
-Responsive overrides where needed:
-- Header: `px-3 sm:px-4`
-- Footer: `px-4 sm:px-6 lg:px-8`
-
-### Max Widths
-
-| Class | Value | Usage |
-|---|---|---|
-| `max-w-sm` | 24rem | Auth forms |
-| `max-w-md` | 28rem | Login/register cards, error pages |
-| `max-w-lg` | 32rem | Dialog content (sm+) |
-| `max-w-2xl` | 42rem | Large dialogs |
-| `max-w-3xl` | 48rem | Embeds, protected state |
-| `max-w-4xl` | 56rem | Main content pages |
-
-### Vertical Spacing (space-y)
-
-| Class | Usage |
-|---|---|
-| `space-y-1` | Tight lists, inline stacks |
-| `space-y-1.5` | Card header |
-| `space-y-2` | Form field groups, small stacks |
-| `space-y-3` | Footer stacks |
-| `space-y-4` | Form sections, dialog content |
-| `space-y-6` | Card content sections |
-| `space-y-8` | Page-level sections |
-
-### Padding
-
-| Class | Usage |
-|---|---|
-| `p-1` | Dropdown content, icon buttons |
-| `p-2` | Code blocks, muted backgrounds |
-| `p-3` | Chat bubbles, inputs |
-| `p-4` | Grid items, action buttons, list items |
-| `p-6` | Cards, dialog content |
-
-### Page Vertical Padding
-
-| Class | Usage |
-|---|---|
-| `py-3 sm:py-4` | Header |
-| `py-4 sm:py-6` | Footer |
-| `py-8` | Standard content pages |
-| `py-12` | Home page, dashboard |
-| `py-16` | Error/not-found pages |
-
----
-
-## Border Radius
-
-| Token | Value | Class |
-|---|---|---|
-| `--radius` | `0.625rem` (10px) | Base |
-| `--radius-sm` | `calc(--radius - 4px)` = 6px | `rounded-sm` |
-| `--radius-md` | `calc(--radius - 2px)` = 8px | `rounded-md` |
-| `--radius-lg` | `var(--radius)` = 10px | `rounded-lg` |
-| `--radius-xl` | `calc(--radius + 4px)` = 14px | `rounded-xl` |
-| — | 9999px | `rounded-full` |
-
-**Usage:**
-- `rounded-md` — Buttons, inputs, textarea, code blocks, dropdowns
-- `rounded-lg` — Cards, dialogs, feature cards, chat bubbles
-- `rounded-xl` — Hero logo container
-- `rounded-full` — Badges, avatars
-
----
-
-## Shadows
-
-| Class | Usage |
-|---|---|
-| `shadow-xs` | Inputs, textarea, secondary/outline buttons |
-| `shadow-sm` | Card base |
-| `shadow-md` | Card hover, dropdown content |
-| `shadow-lg` | Dialogs, dropdown sub-content |
-
-No custom shadow definitions — all Tailwind defaults.
-
----
-
-## Animations
-
-### Custom Keyframes
-
-| Name | Effect | Duration | Easing |
-|---|---|---|---|
-| `fade-in` | Opacity 0 → 1 | 0.3s | ease-out |
-| `fade-up` | Opacity 0 → 1 + translateY(8px → 0) | 0.4s | ease-out |
-| `scale-in` | Opacity 0 → 1 + scale(0.97 → 1) | 0.2s | ease-out |
-
-Use via: `animate-fade-in`, `animate-fade-up`, `animate-scale-in`
-
-### tw-animate-css Animations
-
-Used on dialogs and dropdowns:
-- `animate-in` / `animate-out`
-- `fade-in-0` / `fade-out-0`
-- `zoom-in-95` / `zoom-out-95`
-- `slide-in-from-{top|bottom|left|right}-2`
-
-### Transition Classes
-
-| Class | Usage |
-|---|---|
-| `transition-colors` | Links, hover color changes |
-| `transition-opacity` | Avatar hover, reveal-on-hover |
-| `transition-all duration-200` | Card interactive hover, buttons |
-| `transition-[color,box-shadow]` | Input/textarea focus |
-
-### Utility Classes
-
-```css
-.card-interactive {
-  @apply transition-all duration-200 ease-out;
-}
-.card-interactive:hover {
-  @apply shadow-md -translate-y-0.5;
-}
-```
-
-```css
-.auth-bg {
-  background-image: radial-gradient(
-    circle at 50% 0%,
-    var(--accent) 0%,
-    transparent 50%
-  );
-}
-```
-
----
-
-## Layout
-
-### Root Structure
-
-```
-<body class="antialiased min-h-screen flex flex-col">
-  <SiteHeader />
-  <main id="main-content" class="flex-1">{children}</main>
-  <SiteFooter />
-  <Toaster />
-</body>
-```
+| `card` / `card-foreground` | `oklch(1 0 0)` / `oklch(0.141 0.005 285.823)` | `oklch(0.21 0.006 285.885)` / `oklch(0.985 0 0)` | Card surfaces |
+| `popover` / `popover-foreground` | `oklch(1 0 0)` / `oklch(0.141 0.005 285.823)` | `oklch(0.21 0.006 285.885)` / `oklch(0.985 0 0)` | Menus and toasts |
+| `primary` / `primary-foreground` | `oklch(0.21 0.034 270)` / `oklch(0.985 0 0)` | `oklch(0.92 0.02 270)` / `oklch(0.21 0.006 285.885)` | Primary actions and links |
+| `secondary` / `secondary-foreground` | `oklch(0.967 0.001 286.375)` / `oklch(0.21 0.006 285.885)` | `oklch(0.274 0.006 286.033)` / `oklch(0.985 0 0)` | Secondary actions |
+| `muted` / `muted-foreground` | `oklch(0.967 0.001 286.375)` / `oklch(0.552 0.016 285.938)` | `oklch(0.274 0.006 286.033)` / `oklch(0.705 0.015 286.067)` | Subdued surfaces and copy |
+| `accent` / `accent-foreground` | `oklch(0.96 0.012 270)` / `oklch(0.21 0.006 285.885)` | `oklch(0.28 0.018 270)` / `oklch(0.985 0 0)` | Hover and highlight surfaces |
+| `destructive` | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` | Errors and destructive actions |
+| `border` / `input` | `oklch(0.92 0.004 286.32)` | `oklch(1 0 0 / 10%)` / `oklch(1 0 0 / 15%)` | Dividers and input borders |
+| `ring` | `oklch(0.705 0.06 270)` | `oklch(0.552 0.05 270)` | Focus treatment |
 
-### Page Layout Patterns
+`chart-1` through `chart-5` and the semantic `sidebar-*` token family are also implemented. Use their semantic Tailwind mappings rather than re-creating theme-specific values.
 
-**Auth pages:**
-```
-flex min-h-[calc(100vh-4rem)] items-center justify-center p-4
-  → Card w-full max-w-md
-```
+### Typography
 
-**Standard content pages:**
-```
-container mx-auto px-4 py-8
-  → max-w-4xl mx-auto
-```
+- **Fonts:** Geist (`--font-geist-sans`) for UI text and Geist Mono (`--font-geist-mono`) for code, loaded with `next/font/google`.
+- **Body:** `antialiased` with `font-feature-settings: "rlig" 1, "calt" 1`.
+- **Scale:** `text-xs` 12px, `text-sm` 14px, `text-base` 16px, `text-lg` 18px, `text-xl` 20px, `text-2xl` 24px, `text-3xl` 30px, `text-4xl` 36px, `text-5xl` 48px.
+- **Weights:** `font-medium` for controls and labels, `font-semibold` for section/card titles, and `font-bold` for page and hero titles.
+- **Rhythm:** use the existing `leading-none` for titles, `leading-5` for code, `leading-6` for lists, `leading-7` for paragraphs, and `tracking-tight` for hero text.
 
-**Error/not-found pages:**
-```
-container mx-auto px-4 py-16
-  → max-w-md mx-auto text-center
-```
+### Spacing
 
-### Grid Patterns
+Use the recurring `p-1`, `p-2`, `p-3`, `p-4`, and `p-6` scale. Vertical groups use `space-y-1` through `space-y-8`; use `gap-4` and `gap-6` for responsive editorial rows and grids. Standard containers use `container mx-auto px-4` and existing content limits range from `max-w-sm` for forms to `max-w-4xl` for primary content.
 
-| Pattern | Usage |
-|---|---|
-| `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6` | Feature cards (4-col) |
-| `grid grid-cols-1 md:grid-cols-2 gap-6` | Dashboard cards |
-| `grid grid-cols-1 md:grid-cols-2 gap-4` | Profile info |
-| `grid grid-cols-1 md:grid-cols-3 gap-4` | Quick actions |
+### Radius
 
-### Responsive Breakpoints
+`--radius` is `0.625rem` (10px). Use `rounded-md` (8px) for controls, `rounded-lg` (10px) for cards and dialogs, `rounded-xl` (14px) for larger feature treatments, and `rounded-full` for badges and avatars.
 
-Standard Tailwind breakpoints:
-- `sm:` (640px) — Padding adjustments, text alignment, button sizing
-- `md:` (768px) — Grid column changes (→ 2 col), input font size
-- `lg:` (1024px) — Grid column changes (→ 4 col), wide padding
+### Shadows
 
----
+Borders establish default separation. Use Tailwind defaults sparingly: `shadow-xs` for outlined controls, `shadow-sm` for cards, `shadow-md` for interactive cards and menus, and `shadow-lg` for dialogs and submenus.
 
-## Icons
+### Breakpoints
 
-**Library:** Lucide React
+- **Base:** mobile-first, single-column reading order.
+- **`sm` (640px):** compact padding and dialog-width refinements.
+- **`md` (768px):** two-column rows/grids and compact control typography.
+- **`lg` (1024px):** wider editorial grids and footer padding.
 
-### Sizing Convention
+## 4. Layout
 
-| Size | Classes | Usage |
-|---|---|---|
-| XS | `h-3 w-3` | Inline badge icons |
-| SM | `h-3.5 w-3.5` | Copy buttons |
-| Default | `h-4 w-4` or `size-4` | Standard UI icons |
-| MD | `h-5 w-5` | Header logo icon |
-| LG | `h-7 w-7` | Hero logo icon |
-| XL | `h-16 w-16` | Error/empty state illustrations |
+### Page Structure
 
-### Commonly Used Icons
+Use the established full-height flex-column shell with a header, `main`, footer, and top-right toast region. Keep primary content inside a centered max-width wrapper; use bordered sections or cards to establish local hierarchy instead of excessive nested surfaces.
 
-`Bot`, `User`, `Lock`, `Shield`, `Mail`, `Calendar`, `Copy`, `Check`, `Loader2`, `LogOut`, `Sun`, `Moon`, `Github`, `ArrowLeft`, `RefreshCw`, `AlertCircle`, `FileQuestion`, `Database`, `Palette`, `Video`
+### Grid Rules
 
----
+Start at `grid-cols-1`, then use implemented patterns where appropriate: `md:grid-cols-2` for paired content, `md:grid-cols-3` for concise statistics, and `lg:grid-cols-4` for feature overviews. Maintain `gap-4` or `gap-6` and preserve source reading order when stacked.
 
-## Components (shadcn/ui)
+### Responsive Rules
 
-All components live in `src/components/ui/`. They use `data-slot` attributes, accept `className` for overrides via `cn()`, and follow either `React.forwardRef` or functional component patterns.
+Keep content full width inside its max-width wrapper. Stack action rows on small screens and place them inline from `sm` when space permits. Prefer clean grid-to-stack transitions over compressed multi-column layouts.
 
-### Button
+## 5. Components
 
-6 variants, 4 sizes (CVA-based):
+### Buttons
 
-| Variant | Usage |
-|---|---|
-| `default` | Primary actions |
-| `secondary` | Secondary actions |
-| `outline` | Tertiary actions |
-| `ghost` | Subtle/icon actions |
-| `destructive` | Delete/danger actions |
-| `link` | Inline text links |
+`Button` supports `default`, `secondary`, `outline`, `ghost`, `destructive`, and `link`; sizes are `sm` (h-8 / 32px), default (h-9 / 36px), `lg` (h-10 / 40px), and `icon` (size-9 / 36px). It supports `asChild` for semantic links. Disabled buttons use `disabled:pointer-events-none disabled:opacity-50`.
 
-| Size | Height | Padding |
-|---|---|---|
-| `sm` | h-8 | px-3 |
-| `default` | h-9 | px-4 |
-| `lg` | h-10 | px-6 |
-| `icon` | size-9 | — |
+### Inputs
 
-### Card
+`Input` is h-9 and `Textarea` has `min-h-16`; both use `rounded-md`, `border-input`, `shadow-xs`, `text-base md:text-sm`, muted placeholders, and `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`. Pair each field with the shared `Label`.
 
-6 sub-components: `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`
+### Cards
 
-Base: `rounded-lg border bg-card text-card-foreground shadow-sm`
+`Card` provides a `rounded-lg border bg-card text-card-foreground shadow-sm` surface with `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, and `CardFooter`. Use `.card-interactive` only for interactive cards; it adds a 200ms ease-out transition, `shadow-md`, and `-translate-y-0.5` on hover.
 
-### Input / Textarea
+### Navigation
 
-- Height: `h-9` (input), `min-h-16` (textarea)
-- Border: `border bg-transparent rounded-md shadow-xs`
-- Focus: `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`
-- Validation: `aria-invalid:border-destructive aria-invalid:ring-destructive/20`
-- Responsive font: `text-base md:text-sm`
+`SiteHeader` provides the primary site navigation, theme control, and visible-on-focus skip link. `DropdownMenu` provides compact menu content with a `min-w-[8rem] rounded-md border p-1 shadow-md` popover. `Avatar` is a size-8 circular image with muted fallback, and `Separator` is a 1px `bg-border` divider.
 
-### Badge
+### Modals
 
-4 variants: `default`, `secondary`, `destructive`, `outline`
+`Dialog` is Radix-based with a `bg-black/50` overlay, fade/zoom animation, and `rounded-lg border p-6 shadow-lg` content. Its responsive width is `max-w-[calc(100%-2rem)]`, increasing to `sm:max-w-lg`; use a local override only when content requires it.
 
-Base: `rounded-full border px-2.5 py-0.5 text-xs font-semibold`
+### Tables
 
-### Dialog
+No shared table primitive exists. When tabular data is needed, use semantic HTML (`table`, `thead`, `tbody`, `th`, `td`), semantic background/foreground/border tokens, and responsive overflow or an intentional stacked presentation. Do not introduce a table abstraction without a demonstrated reuse need.
 
-Radix-based with overlay (`bg-black/50`), fade + zoom animations, optional close button.
+### Feedback Components
 
-### DropdownMenu
+- `Badge`: `default`, `secondary`, `destructive`, and `outline` variants; compact rounded-full labels.
+- `Spinner`: Lucide `Loader2` at `sm` (h-4), `md` (h-6), or `lg` (h-8), using `animate-spin`.
+- `Skeleton`: pulsing `bg-accent rounded-md` loading placeholder.
+- `Toaster`: Sonner notifications themed from popover, border, and radius tokens.
 
-Radix-based. Content: `rounded-md border p-1 shadow-md min-w-[8rem]`. Items support a `destructive` variant.
+## 6. Interaction States
 
-### Spinner
+- Keyboard focus uses `outline-2 outline-offset-2 outline-ring`; controls may add the implemented 3px indigo ring.
+- Invalid buttons, inputs, and textareas use `aria-invalid:border-destructive` and a destructive ring.
+- Links use primary color and an underline or opacity/color hover treatment.
+- Dialogs and menus use `tw-animate-css` fade, zoom, and directional-slide classes. Custom entry utilities are `animate-fade-in` (0.3s), `animate-fade-up` (0.4s from 8px below), and `animate-scale-in` (0.2s from 0.97 scale), all ease-out.
+- Theme selection is class-based through `next-themes`, defaults to system, and disables transitions during theme changes.
 
-Sizes: `sm` (h-4 w-4), `md` (h-6 w-6), `lg` (h-8 w-8). Uses `Loader2` with `animate-spin`.
+## 7. Forms and Validation
 
-### Toast (Sonner)
+Use `<form>`, associated `Label`/`htmlFor` pairs, native required fields, and `space-y-2` field groups within a `space-y-4 max-w-sm` form. Disable fields and submit actions while pending. Render known validation errors beneath the relevant field or action as `text-sm text-destructive`; preserve native semantics and `aria-invalid`.
 
-Custom icons per state (success, info, warning, error, loading). Themed via CSS variable overrides.
+## 8. Empty, Loading, and Error States
 
----
-
-## Focus & Interaction States
-
-### Focus Ring (Global)
-
-```css
-outline-2 outline-offset-2 outline-ring/70
-```
-
-Component-level override:
-```
-focus-visible:ring-ring/50 focus-visible:ring-[3px]
-```
-
-### Disabled
-
-```
-disabled:pointer-events-none disabled:opacity-50
-```
-
-### Interactive Card Hover
-
-```
-transition-all duration-200 ease-out
-hover:shadow-md hover:-translate-y-0.5
-```
-
----
-
-## Dark Mode
-
-- **Method:** Class-based via `next-themes` with `attribute="class"` and `disableTransitionOnChange`
-- **Default:** System preference
-- **Toggle:** 3-way dropdown — Light / Dark / System
-- All semantic color tokens swap automatically via `.dark` CSS selector
-- Use `dark:` prefix for component-specific overrides (e.g., `dark:bg-input/30`)
-
----
-
-## Branding
-
-### Logo Text
-
-```
-bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent
-```
-
-### Logo Icon Container
-
-```
-w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center
-```
-
-Hero variant: `w-12 h-12 rounded-xl`
+- **Empty:** use concise muted copy that explains the absence and, when an action exists, the next useful step.
+- **Loading:** use content-shaped `Skeleton` placeholders for loading surfaces and `Spinner` with an action-state label for active work.
+- **Errors:** use `text-destructive`, a concise explanation, and a clear recovery action when the surrounding feature supports one. Do not rely on a toast as the sole error treatment.
+
+## 9. Accessibility
+
+- Use semantic header, nav, main, and footer landmarks; preserve the skip link and the root `lang` value.
+- Preserve `aria-label` values and visually hidden names for icon-only controls.
+- Pair labels and IDs, use native input types and `required`, and apply `aria-invalid` with visible error text when a field is invalid.
+- Do not suppress keyboard focus; retain the global focus outline and component focus rings.
+- Dialog, menu, label, and avatar behavior is based on Radix primitives. External links use `rel="noopener noreferrer"`.
+- Support light, dark, and system appearance through semantic tokens, not fixed foreground/background values.
+
+## 10. Content and Microcopy
+
+- Use direct, action-led, sentence-case labels such as “Create account,” “Try again,” and “Clear chat.”
+- State the next step after a successful action where useful.
+- Keep errors plain and specific; do not invent technical detail.
+- Use placeholders as examples, never as the only field label.
+- Keep dense controls concise enough for the compact 32–40px action scale.
+
+## 11. Implementation Guidelines
+
+- Styling is Tailwind CSS v4 with CSS-first configuration in `src/app/globals.css`; there is no `tailwind.config.ts`.
+- Import `cn()` from `@/lib/utils` for composed class names. Shared primitives expose `className`; do not duplicate their base styles without a local need.
+- Use Lucide React for icons and hide decorative icons from assistive technology when appropriate.
+- Use semantic color and radius tokens that adapt under `.dark`; preserve the `@theme inline` bridge.
+- Preserve `auth-bg` and `card-interactive` when their existing treatments are needed. Prefer thin semantic borders and restrained shadow over new decorative effects.
+
+## 12. Do / Don't Examples
+
+| Do | Don't |
+| --- | --- |
+| Use `<Button asChild><Link … /></Button>` for button-styled internal navigation. | Wrap a button in a link when `asChild` is available. |
+| Use `bg-muted text-muted-foreground` and `border-border` for secondary hierarchy. | Hard-code a light-only gray surface or add shadow to every container. |
+| Pair each input with a `Label`, ID, native type, and required state where applicable. | Rely only on placeholders to identify fields. |
+| Use `text-destructive` and `aria-invalid` for validation and errors. | Hide an error in a toast alone. |
+| Use `Skeleton` for loading shapes and `Spinner` for active work. | Replace loading with unrelated generic decoration. |
+| Stack grids and action rows before their content becomes cramped. | Preserve desktop columns on small screens. |
+
+## 13. Changelog
+
+### 2026-09-20
+
+- Regenerated the document using the 13-section template and approved adapted Vercel-inspired direction.
+- Preserved implemented semantic oklch light/dark tokens, indigo accent/ring, Geist fonts, 10px radius, Tailwind v4, and shadcn/Radix primitives.
+- Added table guidance and documented border-led hierarchy, compact actions, restrained elevation, functional motion, and responsive editorial stacking.
