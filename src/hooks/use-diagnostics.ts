@@ -48,7 +48,10 @@ export function useDiagnostics() {
   }
 
   useEffect(() => {
-    fetchDiagnostics();
+    const timer = window.setTimeout(() => {
+      void fetchDiagnostics();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const isAuthReady =

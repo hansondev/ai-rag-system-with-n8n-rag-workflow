@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Copy, Check, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -199,49 +199,61 @@ function ThinkingIndicator() {
   return (
     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted max-w-[80%]">
       <Loader2 className="h-4 w-4 animate-spin" />
-      <span className="text-sm text-muted-foreground">AI is thinking...</span>
+      <span className="text-sm text-muted-foreground">Searching your documents…</span>
     </div>
   );
 }
 
-const STORAGE_KEY = "chat-messages";
-
 export default function ChatPage() {
   const { data: session, isPending } = useSession();
+  const storageKey = session?.user?.id
+    ? `chat-messages:${session.user.id}`
+    : null;
   const { messages, sendMessage, status, error, setMessages } = useChat({
     onError: (err) => {
       toast.error(err.message || "Failed to send message");
     },
   });
   const [input, setInput] = useState("");
+  // Marks whose history the in-state messages belong to. A user change never
+  // persists one account's messages under another account's key: the save
+  // effect only writes once this ref matches the current storage key.
+  const adoptedKeyRef = useRef<string | null>(null);
 
-  // Load messages from localStorage on mount
+  // Load the signed-in user's messages on mount and whenever the user changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setMessages(parsed);
-          }
-        } catch {
-          // Invalid JSON, ignore
+    if (!storageKey) return;
+    setMessages([]);
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
         }
+      } catch {
+        // Invalid JSON, ignore
       }
     }
-  }, [setMessages]);
+  }, [storageKey, setMessages]);
 
-  // Save messages to localStorage when they change
+  // Save messages to the signed-in user's key once their history is adopted
   useEffect(() => {
-    if (typeof window !== "undefined" && messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    if (!storageKey || adoptedKeyRef.current !== storageKey) return;
+    if (messages.length > 0) {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
     }
-  }, [messages]);
+  }, [storageKey, messages]);
+
+  // Adopt the current key as owner of the in-state messages (runs after save)
+  useEffect(() => {
+    if (!storageKey) return;
+    adoptedKeyRef.current = storageKey;
+  }, [storageKey]);
 
   const clearMessages = () => {
     setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
+    if (storageKey) localStorage.removeItem(storageKey);
     toast.success("Chat cleared");
   };
 
@@ -264,7 +276,7 @@ export default function ChatPage() {
     );
   }
 
-  const isStreaming = status === "streaming";
+  const isStreaming = status === "streaming" || status === "submitted";
 
   return (
     <div className="container mx-auto px-4 py-8">

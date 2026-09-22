@@ -66,7 +66,10 @@ export function SetupChecklist() {
   }
 
   useEffect(() => {
-    load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const steps = [

@@ -5,53 +5,51 @@ import { RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
 
-type Source = {
+const ACCEPT = ".txt,.md,.pdf,.docx,.xls,.xlsx";
+const POLL_INTERVAL_MS = 4000;
+
+type DocumentDto = {
   id: string;
-  title: string;
-  type: "text" | "url";
-  url?: string;
-  status: "ready" | "failed";
-  error?: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  status: "processing" | "ready" | "failed";
+  n8nTrackId: string | null;
+  error: string | null;
   createdAt: string;
   updatedAt: string;
-  chunkCount: number;
+  processedAt: string | null;
 };
 
-type SourceType = "text" | "url";
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function statusLabel(status: DocumentDto["status"]): string {
+  if (status === "ready") return "Ready";
+  if (status === "failed") return "Failed";
+  return "Processing";
+}
 
 export default function SourcesPage() {
-  const [sources, setSources] = useState<Source[]>([]);
+  const [sources, setSources] = useState<DocumentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [sourceType, setSourceType] = useState<SourceType>("text");
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
 
   const fetchSources = useCallback(async () => {
     try {
       const res = await fetch("/api/sources");
       if (!res.ok) throw new Error(`Failed to load sources (HTTP ${res.status})`);
-      const data = (await res.json()) as Source[];
+      const data = (await res.json()) as DocumentDto[];
       setSources(data);
       setError(null);
     } catch (e) {
@@ -62,88 +60,84 @@ export default function SourcesPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(fetchSources, 0);
+    const timer = window.setTimeout(() => void fetchSources(), 0);
     return () => window.clearTimeout(timer);
   }, [fetchSources]);
 
-  const resetForm = () => {
-    setSourceType("text");
-    setTitle("");
-    setContent("");
-    setUrl("");
-  };
+  useEffect(() => {
+    const anyProcessing = sources.some((s) => s.status === "processing");
+    if (!anyProcessing) return;
+    const interval = window.setInterval(() => void fetchSources(), POLL_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [sources, fetchSources]);
 
-  const handleOpenDialog = (open: boolean) => {
-    setDialogOpen(open);
-    if (open) resetForm();
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const trimmedTitle = title.trim();
-    const trimmedContent = content.trim();
-    const trimmedUrl = url.trim();
-
-    if (sourceType === "text") {
-      if (!trimmedTitle || !trimmedContent) return;
-    } else {
-      if (!trimmedUrl.startsWith("https://")) return;
-    }
+    if (!file || pending) return;
 
     setPending(true);
     try {
-      const body =
-        sourceType === "text"
-          ? { type: "text", title: trimmedTitle, content: trimmedContent }
-          : { type: "url", url: trimmedUrl };
-      const res = await fetch("/api/sources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const created = (await res.json()) as Source;
-      if (res.ok && created.status === "failed") {
-        toast.error(created.error || "Source failed to process");
-      } else if (res.ok) {
-        toast.success("Source added");
-        setDialogOpen(false);
-        resetForm();
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/sources", { method: "POST", body: form });
+      const data = (await res.json()) as DocumentDto | { error: string };
+      if (!res.ok) {
+        toast.error("error" in data ? data.error : "Upload failed");
       } else {
-        toast.error("Failed to add source");
+        toast.success("Document added");
+        setFile(null);
       }
       await fetchSources();
     } catch {
-      toast.error("Failed to add source");
+      toast.error("Upload failed");
       await fetchSources();
     } finally {
       setPending(false);
     }
   };
 
-  const handleDelete = async (source: Source) => {
-    if (!confirm(`Delete "${source.title}"?`)) return;
+  const handleDelete = async (source: DocumentDto) => {
+    if (!window.confirm(`Delete "${source.filename}"?`)) return;
     try {
       const res = await fetch(`/api/sources/${source.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      toast.success("Source deleted");
+      toast.success("Document deleted");
       await fetchSources();
     } catch {
-      toast.error("Failed to delete source");
+      toast.error("Failed to delete document");
     }
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Sources</h1>
-            <p className="text-sm text-muted-foreground">
-              Add text or URLs to your knowledge base.
-            </p>
-          </div>
-          <Button onClick={() => setDialogOpen(true)}>Add source</Button>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Sources</h1>
+          <p className="text-sm text-muted-foreground">
+            Upload documents to your private knowledge base.
+          </p>
         </div>
+
+        <form
+          onSubmit={handleUpload}
+          className="mb-6 flex flex-col sm:flex-row gap-3 items-end"
+        >
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="document-file">
+              Document ({ACCEPT.split(",").join(" ")})
+            </Label>
+            <Input
+              id="document-file"
+              type="file"
+              accept={ACCEPT}
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              disabled={pending}
+            />
+          </div>
+          <Button type="submit" disabled={!file || pending}>
+            {pending ? "Uploading…" : "Upload"}
+          </Button>
+        </form>
 
         {loading ? (
           <div className="flex items-center gap-2 py-8">
@@ -153,7 +147,7 @@ export default function SourcesPage() {
         ) : error ? (
           <div className="space-y-3">
             <p className="text-sm text-destructive">{error}</p>
-            <Button onClick={fetchSources}>
+            <Button onClick={() => void fetchSources()}>
               <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
               Try again
             </Button>
@@ -162,10 +156,9 @@ export default function SourcesPage() {
           <Card>
             <CardContent className="p-6 text-center space-y-3">
               <p className="text-sm text-muted-foreground">
-                No sources yet. Add your first text or URL to start asking
+                No documents yet. Upload your first file to start asking
                 questions.
               </p>
-              <Button onClick={() => setDialogOpen(true)}>Add source</Button>
             </CardContent>
           </Card>
         ) : (
@@ -173,9 +166,8 @@ export default function SourcesPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="py-2 px-2 font-medium">Title</th>
-                  <th className="py-2 px-2 font-medium">Type</th>
-                  <th className="py-2 px-2 font-medium">Chunks</th>
+                  <th className="py-2 px-2 font-medium">Document</th>
+                  <th className="py-2 px-2 font-medium">Size</th>
                   <th className="py-2 px-2 font-medium">Status</th>
                   <th className="py-2 px-2">
                     <span className="sr-only">Actions</span>
@@ -186,32 +178,43 @@ export default function SourcesPage() {
                 {sources.map((source) => (
                   <tr key={source.id} className="border-b border-border">
                     <td className="py-2 px-2">
-                      <span>{source.title}</span>
+                      <span>{source.filename}</span>
                       <span className="block text-xs text-muted-foreground">
-                        Updated{" "}
-                        {new Date(source.updatedAt).toLocaleDateString("en-US", {
+                        Uploaded{" "}
+                        {new Date(source.createdAt).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                         })}
                       </span>
                     </td>
                     <td className="py-2 px-2 text-muted-foreground">
-                      {source.type === "text" ? "Text" : "URL"}
+                      {formatBytes(source.size)}
                     </td>
-                    <td className="py-2 px-2">{source.chunkCount}</td>
                     <td className="py-2 px-2">
                       <Badge
-                        variant={source.status === "ready" ? "default" : "destructive"}
+                        variant={
+                          source.status === "ready"
+                            ? "default"
+                            : source.status === "failed"
+                              ? "destructive"
+                              : "outline"
+                        }
                       >
-                        {source.status === "ready" ? "Ready" : "Failed"}
+                        {statusLabel(source.status)}
                       </Badge>
+                      {source.status === "failed" && source.error ? (
+                        <span className="block text-xs text-destructive mt-1">
+                          {source.error}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="py-2 px-2 text-right">
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label={`Delete ${source.title}`}
+                        aria-label={`Delete ${source.filename}`}
                         onClick={() => handleDelete(source)}
+                        disabled={source.status === "processing"}
                       >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </Button>
@@ -223,107 +226,6 @@ export default function SourcesPage() {
           </div>
         )}
       </div>
-
-      <Dialog open={dialogOpen} onOpenChange={handleOpenDialog}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add source</DialogTitle>
-            <DialogDescription>
-              Add text or URLs to your knowledge base.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2" role="group" aria-label="Source type">
-            <Button
-              type="button"
-              variant={sourceType === "text" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSourceType("text")}
-              aria-pressed={sourceType === "text"}
-            >
-              Text
-            </Button>
-            <Button
-              type="button"
-              variant={sourceType === "url" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSourceType("url")}
-              aria-pressed={sourceType === "url"}
-            >
-              URL
-            </Button>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {sourceType === "text" ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="source-title">Title</Label>
-                  <Input
-                    id="source-title"
-                    name="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Meeting notes"
-                    required
-                    disabled={pending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="source-content">Content</Label>
-                  <Textarea
-                    id="source-content"
-                    name="content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Paste the text to add…"
-                    required
-                    disabled={pending}
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="source-url">URL</Label>
-                  <Input
-                    id="source-url"
-                    name="url"
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://example.com/article"
-                    required
-                    disabled={pending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="source-url-title">Title (optional)</Label>
-                  <Input
-                    id="source-url-title"
-                    name="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Leave blank to use the page title"
-                    disabled={pending}
-                  />
-                </div>
-              </>
-            )}
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-                disabled={pending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending}>
-                Add source
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

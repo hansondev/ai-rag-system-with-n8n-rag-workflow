@@ -24,6 +24,19 @@ const serverEnvSchema = z.object({
   // Storage
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
 
+  // Private RAG (n8n) - server-only webhook endpoints and header-auth secrets.
+  // The browser must never receive any of these values.
+  N8N_RAG_INGEST_URL: z.string().url("Invalid n8n ingestion webhook URL"),
+  N8N_RAG_STATUS_URL: z.string().url("Invalid n8n status webhook URL"),
+  N8N_RAG_DELETE_URL: z.string().url("Invalid n8n deletion webhook URL"),
+  N8N_RAG_CHAT_URL: z.string().url("Invalid n8n chat webhook URL"),
+  N8N_RAG_INGEST_SECRET: z
+    .string()
+    .min(16, "N8N_RAG_INGEST_SECRET must be at least 16 characters"),
+  N8N_RAG_CHAT_SECRET: z
+    .string()
+    .min(16, "N8N_RAG_CHAT_SECRET must be at least 16 characters"),
+
   // App
   NODE_ENV: z
     .enum(["development", "production", "test"])
@@ -95,13 +108,27 @@ export function checkEnv(): void {
     throw new Error("BETTER_AUTH_SECRET is required");
   }
 
+  const n8nRequired = [
+    "N8N_RAG_INGEST_URL",
+    "N8N_RAG_STATUS_URL",
+    "N8N_RAG_DELETE_URL",
+    "N8N_RAG_CHAT_URL",
+    "N8N_RAG_INGEST_SECRET",
+    "N8N_RAG_CHAT_SECRET",
+  ] as const;
+  for (const key of n8nRequired) {
+    if (!process.env[key]) {
+      throw new Error(`${key} is required for private RAG`);
+    }
+  }
+
   // Check optional variables and warn
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     warnings.push("Google OAuth is not configured. Social login will be disabled.");
   }
 
   if (!process.env.OPENROUTER_API_KEY) {
-    warnings.push("OPENROUTER_API_KEY is not set. AI chat will not work.");
+    warnings.push("OPENROUTER_API_KEY is not set. Diagnostics will report the AI provider as unconfigured.");
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {

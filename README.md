@@ -252,6 +252,12 @@ Important root files:
 - `env.example`: environment variable template
 - `components.json`: shadcn/ui configuration
 
+## Feature Documentation
+
+Implemented features are documented under `docs/features/`:
+
+- [Private Document RAG](./docs/features/private-document-rag.md) — user-scoped file ingestion and n8n-backed Qdrant retrieval
+
 ## Available Scripts
 
 ```bash

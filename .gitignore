@@ -45,4 +45,10 @@ next-env.d.ts
 # uploads
 public/uploads
 
-nul
+# agent runtime artifacts and local config (contains credentials)
+opencode.json
+/.hermes/
+/.pi/
+/.memsearch/
+/.kilo/
+/skills/
