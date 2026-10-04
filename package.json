@@ -1,6 +1,8 @@
 {
-  "name": "agentic-coding-starter-kit",
+  "name": "ai-rag-system-with-n8n-rag-workflow",
   "version": "1.1.2",
+  "description": "This is the Agentic RAG System Chat App With Uploading Own Documents and Chat With Your Documents Like ChatGPT",
+  "author": "Hanson Dev",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "pnpm run db:migrate && next build",

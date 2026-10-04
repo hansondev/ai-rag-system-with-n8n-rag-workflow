@@ -18,36 +18,36 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Agentic Coding Boilerplate",
-    template: "%s | Agentic Coding Boilerplate",
+    default: "AI Chat Based RAG Document Upload & Query App",
+    template: "%s | AI Chat Based RAG Document Upload & Query App",
   },
   description:
-    "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling - perfect for building AI-powered applications and autonomous agents by Leon van Zyl",
+    "This is the Agentic RAG System Chat App With Uploading Own Documents and Chat With Your Documents Like ChatGPT",
   keywords: [
     "Next.js",
     "React",
     "TypeScript",
     "AI",
     "OpenRouter",
-    "Boilerplate",
+    "RAG",
     "Authentication",
     "PostgreSQL",
   ],
-  authors: [{ name: "Leon van Zyl" }],
-  creator: "Leon van Zyl",
+  authors: [{ name: "Hanson Dev" }],
+  creator: "Hanson Dev",
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "Agentic Coding Boilerplate",
-    title: "Agentic Coding Boilerplate",
+    siteName: "AI Chat Based RAG Document Upload & Query App",
+    title: "AI Chat Based RAG Document Upload & Query App",
     description:
-      "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling",
+      "This is the Agentic RAG System Chat App With Uploading Own Documents and Chat With Your Documents Like ChatGPT",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agentic Coding Boilerplate",
+    title: "AI Chat Based RAG Document Upload & Query App",
     description:
-      "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling",
+      "This is the Agentic RAG System Chat App With Uploading Own Documents and Chat With Your Documents Like ChatGPT",
   },
   robots: {
     index: true,
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Agentic Coding Boilerplate",
+  name: "AI Chat Based RAG Document Upload & Query App",
   description:
-    "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling",
+    "This is the Agentic RAG System Chat App With Uploading Own Documents and Chat With Your Documents Like ChatGPT",
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Any",
   offers: {
@@ -71,7 +71,7 @@ const jsonLd = {
   },
   author: {
     "@type": "Person",
-    name: "Leon van Zyl",
+    name: "Hanson Dev",
   },
 };
 
