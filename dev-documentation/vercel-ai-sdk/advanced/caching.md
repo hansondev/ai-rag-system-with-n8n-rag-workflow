@@ -1,0 +1,832 @@
+---
+title: "Caching Responses"
+source_url: https://ai-sdk.dev/docs/advanced/caching
+section: advanced
+crawled: 2026-09-20
+---
+
+# Caching Responses
+
+> Source: https://ai-sdk.dev/docs/advanced/caching
+
+[Advanced](/docs/advanced)Caching
+
+
+[Caching Responses](#caching-responses)
+=======================================
+
+Depending on the type of application you're building, you may want to cache the responses you receive from your AI provider, at least temporarily.
+
+[Using Language Model Middleware (Recommended)](#using-language-model-middleware-recommended)
+---------------------------------------------------------------------------------------------
+
+The recommended approach to caching responses is using [language model middleware](/docs/ai-sdk-core/middleware)
+and the [`simulateReadableStream`](/docs/reference/ai-sdk-core/simulate-readable-stream) function.
+
+Language model middleware is a way to enhance the behavior of language models by intercepting and modifying the calls to the language model.
+Let's see how you can use language model middleware to cache responses.
+
+ai/middleware.ts
+
+```
+1
+
+import { Redis } from '@upstash/redis';
+
+
+
+2
+
+import {
+
+
+
+3
+
+type LanguageModelV4,
+
+
+
+4
+
+type LanguageModelV4Middleware,
+
+
+
+5
+
+type LanguageModelV4StreamPart,
+
+
+
+6
+
+simulateReadableStream,
+
+
+
+7
+
+} from 'ai';
+
+
+
+8
+
+
+
+9
+
+const redis = new Redis({
+
+
+
+10
+
+url: process.env.KV_URL,
+
+
+
+11
+
+token: process.env.KV_TOKEN,
+
+
+
+12
+
+});
+
+
+
+13
+
+
+
+14
+
+export const cacheMiddleware: LanguageModelV4Middleware = {
+
+
+
+15
+
+wrapGenerate: async ({ doGenerate, params }) => {
+
+
+
+16
+
+const cacheKey = JSON.stringify(params);
+
+
+
+17
+
+
+
+18
+
+const cached = (await redis.get(cacheKey)) as Awaited<
+
+
+
+19
+
+ReturnType<LanguageModelV4['doGenerate']>
+
+
+
+20
+
+> | null;
+
+
+
+21
+
+
+
+22
+
+if (cached !== null) {
+
+
+
+23
+
+return {
+
+
+
+24
+
+...cached,
+
+
+
+25
+
+response: {
+
+
+
+26
+
+...cached.response,
+
+
+
+27
+
+timestamp: cached?.response?.timestamp
+
+
+
+28
+
+? new Date(cached?.response?.timestamp)
+
+
+
+29
+
+: undefined,
+
+
+
+30
+
+},
+
+
+
+31
+
+};
+
+
+
+32
+
+}
+
+
+
+33
+
+
+
+34
+
+const result = await doGenerate();
+
+
+
+35
+
+
+
+36
+
+redis.set(cacheKey, result);
+
+
+
+37
+
+
+
+38
+
+return result;
+
+
+
+39
+
+},
+
+
+
+40
+
+wrapStream: async ({ doStream, params }) => {
+
+
+
+41
+
+const cacheKey = JSON.stringify(params);
+
+
+
+42
+
+
+
+43
+
+// Check if the result is in the cache
+
+
+
+44
+
+const cached = await redis.get(cacheKey);
+
+
+
+45
+
+
+
+46
+
+// If cached, return a simulated ReadableStream that yields the cached result
+
+
+
+47
+
+if (cached !== null) {
+
+
+
+48
+
+// Format the timestamps in the cached response
+
+
+
+49
+
+const formattedChunks = (cached as LanguageModelV4StreamPart[]).map(p => {
+
+
+
+50
+
+if (p.type === 'response-metadata' && p.timestamp) {
+
+
+
+51
+
+return { ...p, timestamp: new Date(p.timestamp) };
+
+
+
+52
+
+} else return p;
+
+
+
+53
+
+});
+
+
+
+54
+
+return {
+
+
+
+55
+
+stream: simulateReadableStream({
+
+
+
+56
+
+initialDelayInMs: 0,
+
+
+
+57
+
+chunkDelayInMs: 10,
+
+
+
+58
+
+chunks: formattedChunks,
+
+
+
+59
+
+}),
+
+
+
+60
+
+};
+
+
+
+61
+
+}
+
+
+
+62
+
+
+
+63
+
+// If not cached, proceed with streaming
+
+
+
+64
+
+const { stream, ...rest } = await doStream();
+
+
+
+65
+
+
+
+66
+
+const fullResponse: LanguageModelV4StreamPart[] = [];
+
+
+
+67
+
+
+
+68
+
+const transformStream = new TransformStream<
+
+
+
+69
+
+LanguageModelV4StreamPart,
+
+
+
+70
+
+LanguageModelV4StreamPart
+
+
+
+71
+
+>({
+
+
+
+72
+
+transform(chunk, controller) {
+
+
+
+73
+
+fullResponse.push(chunk);
+
+
+
+74
+
+controller.enqueue(chunk);
+
+
+
+75
+
+},
+
+
+
+76
+
+flush() {
+
+
+
+77
+
+// Store the full response in the cache after streaming is complete
+
+
+
+78
+
+redis.set(cacheKey, fullResponse);
+
+
+
+79
+
+},
+
+
+
+80
+
+});
+
+
+
+81
+
+
+
+82
+
+return {
+
+
+
+83
+
+stream: stream.pipeThrough(transformStream),
+
+
+
+84
+
+...rest,
+
+
+
+85
+
+};
+
+
+
+86
+
+},
+
+
+
+87
+
+};
+```
+
+This example uses `@upstash/redis` to store and retrieve the assistant's
+responses but you can use any KV storage provider you would like.
+
+This middleware caches the raw model response before AI SDK validates
+structured output. When using structured output, cache only a response that
+has passed your schema validation; otherwise, an invalid response can be
+replayed from the cache on later requests.
+
+`LanguageModelV4Middleware` has two methods: `wrapGenerate` and `wrapStream`. `wrapGenerate` is called when using [`generateText`](/docs/reference/ai-sdk-core/generate-text), while `wrapStream` is called when using [`streamText`](/docs/reference/ai-sdk-core/stream-text).
+
+For `wrapGenerate`, you can cache the response directly. Instead, for `wrapStream`, you cache an array of the stream parts, which can then be used with [`simulateReadableStream`](/docs/ai-sdk-core/testing#simulate-ui-message-stream-responses) function to create a simulated `ReadableStream` that returns the cached response. In this way, the cached response is returned chunk-by-chunk as if it were being generated by the model. You can control the initial delay and delay between chunks by adjusting the `initialDelayInMs` and `chunkDelayInMs` parameters of `simulateReadableStream`.
+
+You can see a full example of caching with Redis in a Next.js application in our [Caching Middleware Recipe](/cookbook/next/caching-middleware).
+
+[Using Lifecycle Callbacks](#using-lifecycle-callbacks)
+-------------------------------------------------------
+
+Alternatively, each AI SDK Core function has special lifecycle callbacks you can use. The one of interest is likely `onEnd`, which is called when the generation is complete. This is where you can cache the full response.
+
+Here's an example of how you can use [Upstash Redis](https://upstash.com/redis) and Next.js to cache the OpenAI response for 1 hour:
+
+GatewayProviderCustom
+
+![](/icons/xai-black.svg)Grok 4.6
+
+app/api/chat/route.ts
+
+```
+1
+
+import {
+
+
+
+2
+
+convertToModelMessages,
+
+
+
+3
+
+createUIMessageStreamResponse,
+
+
+
+4
+
+streamText,
+
+
+
+5
+
+toUIMessageStream,
+
+
+
+6
+
+UIMessage,
+
+
+
+7
+
+} from 'ai';
+
+
+
+8
+
+import { Redis } from '@upstash/redis';
+
+
+
+9
+
+
+
+10
+
+// Allow streaming responses up to 30 seconds
+
+
+
+11
+
+export const maxDuration = 30;
+
+
+
+12
+
+
+
+13
+
+const redis = new Redis({
+
+
+
+14
+
+url: process.env.KV_URL,
+
+
+
+15
+
+token: process.env.KV_TOKEN,
+
+
+
+16
+
+});
+
+
+
+17
+
+
+
+18
+
+export async function POST(req: Request) {
+
+
+
+19
+
+const { messages }: { messages: UIMessage[] } = await req.json();
+
+
+
+20
+
+
+
+21
+
+// come up with a key based on the request:
+
+
+
+22
+
+const key = JSON.stringify(messages);
+
+
+
+23
+
+
+
+24
+
+// Check if we have a cached response
+
+
+
+25
+
+const cached = (await redis.get(key)) as string | null;
+
+
+
+26
+
+if (cached != null) {
+
+
+
+27
+
+return new Response(cached, {
+
+
+
+28
+
+status: 200,
+
+
+
+29
+
+headers: { 'Content-Type': 'text/plain' },
+
+
+
+30
+
+});
+
+
+
+31
+
+}
+
+
+
+32
+
+
+
+33
+
+// Call the language model:
+
+
+
+34
+
+const result = streamText({
+
+
+
+35
+
+model: "xai/grok-4.6",
+
+
+
+36
+
+messages: await convertToModelMessages(messages),
+
+
+
+37
+
+async onEnd({ text }) {
+
+
+
+38
+
+// Cache the response text:
+
+
+
+39
+
+await redis.set(key, text);
+
+
+
+40
+
+await redis.expire(key, 60 * 60);
+
+
+
+41
+
+},
+
+
+
+42
+
+});
+
+
+
+43
+
+
+
+44
+
+// Respond with the stream
+
+
+
+45
+
+return createUIMessageStreamResponse({
+
+
+
+46
+
+stream: toUIMessageStream({ stream: result.stream }),
+
+
+
+47
+
+});
+
+
+
+48
+
+}
+```
+
+[Previous
+
+Backpressure](/docs/advanced/backpressure)[Next
+
+Multiple Streamables](/docs/advanced/multiple-streamables)
